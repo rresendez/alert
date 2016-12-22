@@ -7,6 +7,9 @@ var getJSON = require('get-json');
 
 // Load the twilio module
 var twilio = require('twilio');
+var User = require('../app/model/user');
+
+
 
 // Create a new REST API client to make authenticated requests against the
 // twilio back end
@@ -28,7 +31,7 @@ var bool=false;
 function fluc (v1,v2){
   var onep = v1/100;
   var point = onep/2;
-  if(v2>v1+point||v2<v1-point){
+  if(v2>v1+onep||v2<v1-onep){
     return true;
   }
   else{
@@ -77,12 +80,13 @@ cron.schedule('*/10 * * * * *', function (){
 
   if(bool){
     console.log("This is test for cron");
+    User.find().cursor().on('data',function(doc){
 
 
     client.sms.messages.create({
-        to:'9564292948',
+        to:doc.number,
         from:'9563771377',
-        body:'There was a 1% bitcoin fluctuation from: '+datg + ' to ' +datx,
+        body:'Hey '+doc.name+' There was a 1% bitcoin fluctuation from: '+datg + ' to ' +datx,
     }, function(error, message) {
         // The HTTP request to Twilio will run asynchronously. This callback
         // function will be called when a response is received from Twilio
@@ -104,6 +108,7 @@ cron.schedule('*/10 * * * * *', function (){
             console.log(error);
         }
     });
+  });
 
   }
   else{
