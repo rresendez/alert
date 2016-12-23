@@ -31,7 +31,7 @@ var bool=false;
 function fluc (v1,v2){
   var onep = v1/100;
   var point = onep/2;
-  if(v2>v1+onep||v2<v1-onep){
+  if(v2>v1+point||v2<v1-point){
     return true;
   }
   else{
@@ -66,27 +66,30 @@ cron.schedule('*/10 * * * * *', function (){
     datx=datx.toFixed(2);
 
   })
-  console.log(bool);
-  console.log("dat g value " + datg);
-  console.log("dat x value "+ datx);
+  console.log("Fluc status: "+bool);
+  console.log("Bitcoin AVG price $" + datg);
+  console.log("Bitcoin current price $"+ datx);
 
   var t1,t2;
   t1=Math.floor(datg);
   t2=Math.floor(datx);
-  console.log(t1,t2);
+  console.log("Evaluating fluctuation .... ( "+t1,t2+" ) ....");
   //Test for fluctuation
   bool=fluc(t1,t2);
-  console.log(bool);
+  console.log("Fluc status: " + bool);
 
-  if(bool){
-    console.log("This is test for cron");
+  if(bool && datx>1){
+    console.log("Condtitions meet preparing sms");
     User.find().cursor().on('data',function(doc){
+
+      //Check for users
+      console.log("Sending sms to: "+doc.name);
 
 
     client.sms.messages.create({
         to:doc.number,
         from:'9563771377',
-        body:'Hey '+doc.name+' There was a 1% bitcoin fluctuation from: '+datg + ' to ' +datx,
+        body:'Hey '+doc.name+' There was a 0.5% bitcoin fluctuation from: '+datg + ' to ' +datx,
     }, function(error, message) {
         // The HTTP request to Twilio will run asynchronously. This callback
         // function will be called when a response is received from Twilio
@@ -115,6 +118,7 @@ cron.schedule('*/10 * * * * *', function (){
     console.log("No fluctuation");
     console.log("");
     console.log("/*******************NEW ITERATION**********************/")
+    console.log("");
 
   }
 
