@@ -8,6 +8,7 @@ var getJSON = require('get-json');
 // Load the twilio module
 var twilio = require('twilio');
 var User = require('../app/model/user');
+var Log = require('../app/model/log');
 
 
 
@@ -26,22 +27,29 @@ var client = new twilio.RestClient('ACa57bd2a6cc2a50aa56ed4b2bd1e0577b','4f5eb49
 var link="http://api.coindesk.com/v1/bpi/currentprice.json"
 var datg,datx="";
 var bool=false;
+
 //One percent fluctuation function
 
 function fluc (v1,v2){
   var onep = v1/100;
   var point = onep/2;
-  if(v2>v1+point||v2<v1-point){
+  if(v2>v1+onep||v2<v1-onep){
     return true;
   }
   else{
     return false;
   }
 }
-
+// Money formatting function
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 //Get original value for bitcoin as datg
     getJSON(link, function (error,data) {
       if(error){
+        console.log(error);
+      }
+      if(!data){
         console.log(error);
       }
       var datc,datf;
@@ -53,22 +61,34 @@ function fluc (v1,v2){
     })
     //Check for fluctuation
 cron.schedule('*/10 * * * * *', function (){
+  //Create time stamp
+  var d = new Date;
 // Get current value of bitcoin
 
   getJSON(link, function (error,data) {
-    if(error){
+
+    if(error||!data||!data.bpi){
       console.log(error);
-    }
+      console.log("Attempting to recover....");
+      console.log("");
+    }else{
     var datc,datf;
     datc = data.bpi;
     datf = datc.USD;
     datx = Number(datf.rate);
     datx=datx.toFixed(2);
+  }
 
   })
+  //Formating number with comas
+  var avg, curr;
+  avg= numberWithCommas(datg);
+  curr = numberWithCommas(datx);
+  //Print 2 console
+  console.log("Time stamp: "+d.toString());
   console.log("Fluc status: "+bool);
-  console.log("Bitcoin AVG price $" + datg);
-  console.log("Bitcoin current price $"+ datx);
+  console.log("Bitcoin AVG price: $" + avg);
+  console.log("Bitcoin current price: $"+ curr);
 
   var t1,t2;
   t1=Math.floor(datg);
@@ -78,18 +98,45 @@ cron.schedule('*/10 * * * * *', function (){
   bool=fluc(t1,t2);
   console.log("Fluc status: " + bool);
 
-  if(bool && datx>1){
+  var test ="";
+
+  if(bool&&datx>0){
     console.log("Condtitions meet preparing sms");
+    console.log("Time stamp: "+d.toString());
+    //Add log to DB
+
+      var newLog = Log({
+        time: d.toString(),
+        avg: avg,
+        curr: curr
+      });
+      console.log("New log generated"+newLog);
+      newLog.save(function(err){
+        if(err) throw err;
+        console.log("Log added");
+
+
+      });
+
+    //Lokking for all numbers in the list
     User.find().cursor().on('data',function(doc){
+      if(datx<1){
+        test=" This is a test!";
+      }
+
+
 
       //Check for users
       console.log("Sending sms to: "+doc.name);
+      if(doc.name=="Rigoberto"){
+        doc.number="011521"+doc.number;
+      }
 
 
     client.sms.messages.create({
         to:doc.number,
         from:'9563771377',
-        body:'Hey '+doc.name+' There was a 0.5% bitcoin fluctuation from: '+datg + ' to ' +datx,
+        body:'Hey '+doc.name+', there was a 1% bitcoin fluctuation from: '+avg + ' to ' +curr+ test ,
     }, function(error, message) {
         // The HTTP request to Twilio will run asynchronously. This callback
         // function will be called when a response is received from Twilio
@@ -113,7 +160,9 @@ cron.schedule('*/10 * * * * *', function (){
     });
   });
 
-  }
+  //Update value of datg
+  datg=datx;
+}
   else{
     console.log("No fluctuation");
     console.log("");
