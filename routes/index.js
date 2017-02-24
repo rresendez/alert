@@ -9,6 +9,7 @@ var getJSON = require('get-json');
 var twilio = require('twilio');
 var User = require('../app/model/user');
 var Log = require('../app/model/log');
+var Ath = require('../app/model/ath');
 
 
 
@@ -55,8 +56,9 @@ function numberWithCommas(x) {
       var datc,datf;
       datc = data.bpi;
       datf = datc.USD;
-      datg = Number(datf.rate);
-      datg=datg.toFixed(2);
+      datg = datf.rate;
+      datg= datg.split(',').join('');
+      //datg=datg.toFixed(2);
       console.log(datg);
     })
     //Check for fluctuation
@@ -75,16 +77,23 @@ cron.schedule('*/10 * * * * *', function (){
     var datc,datf;
     datc = data.bpi;
     datf = datc.USD;
-    datx = Number(datf.rate);
-    datx=datx.toFixed(2);
+    datx =datf.rate;
+    datx= datx.split(',').join('');
+    //datx=datx.toFixed(2);
   }
 
   })
   //Formating number with comas
   var avg, curr;
-  avg= numberWithCommas(datg);
-  curr = numberWithCommas(datx);
+  avg= datg;
+  curr = datx;
   //Print 2 console
+    //Get all time high
+  var athValue=""
+    Ath.findOne({code:1}, function(err, value){
+      athValue=value.value;
+      console.log("ATH: " + value.value+ " Date: " +value.time);
+    });
   console.log("Time stamp: "+d.toString());
   console.log("Fluc status: "+bool);
   console.log("Bitcoin AVG price: $" + avg);
@@ -98,9 +107,33 @@ cron.schedule('*/10 * * * * *', function (){
   bool=fluc(t1,t2);
   console.log("Fluc status: " + bool);
 
+
+
   var test ="";
 
+
   if(bool&&datx>0){
+
+
+    //ATH test
+    if(datx>athValue){
+      test="all time high, BROKE!"
+      //Add all time high
+
+      var newAth = Ath({
+        time: d.toString(),
+        value: datx,
+        code: 1
+      });
+      console.log("New Ath generated "+newAth);
+      newAth.save(function(err){
+        if(err) throw err;
+        console.log("ATH added");
+
+
+      });
+
+    }
     console.log("Condtitions meet preparing sms");
     console.log("Time stamp: "+d.toString());
     //Add log to DB
@@ -121,7 +154,7 @@ cron.schedule('*/10 * * * * *', function (){
     //Lokking for all numbers in the list
     User.find().cursor().on('data',function(doc){
       if(datx<1){
-        test=" This is a test!";
+        test=" This is a test";
       }
 
 
@@ -129,14 +162,14 @@ cron.schedule('*/10 * * * * *', function (){
       //Check for users
       console.log("Sending sms to: "+doc.name);
       if(doc.name=="Rigoberto"){
-        doc.number="011521"+doc.number;
+        doc.number="01152"+doc.number;
       }
 
 
     client.sms.messages.create({
         to:doc.number,
         from:'9563771377',
-        body:'Hey '+doc.name+', there was a 1% bitcoin fluctuation from: '+avg + ' to ' +curr+ test ,
+        body:'Hey '+doc.name+', there was a 1% bitcoin fluctuation from: $'+avg + ' to $' +curr+ test ,
     }, function(error, message) {
         // The HTTP request to Twilio will run asynchronously. This callback
         // function will be called when a response is received from Twilio
