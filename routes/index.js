@@ -117,7 +117,7 @@ cron.schedule('*/10 * * * * *', function (){
 
     //ATH test
     if(datx>athValue){
-      test="all time high, BROKE!"
+      test="ATH "+athValue, " BROKE by "+ datx;
       //Add all time high
 
       var newAth = Ath({
