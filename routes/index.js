@@ -116,26 +116,28 @@ cron.schedule('*/10 * * * * *', function (){
 
 
     //ATH test
-    if(datx>athValue){
-      athOld=Math.floor(athValue);
+    Ath.findOne({code:1}, function(err, value){
+    if(datx>value.value){
+      athOld=Math.floor(value.value);
       athNew=Math.floor(datx);
-      test="ATH "+athOld, " BROKE by "+ athNew;
+      test="ATH "+athOld+ " BROKE by "+ athNew;
       //Add all time high
 
-      var newAth = Ath({
+
+      Ath.update({code:1},{
         time: d.toString(),
-        value: datx,
-        code: 1
-      });
-      console.log("New Ath generated "+newAth);
-      newAth.save(function(err){
-        if(err) throw err;
+        value: datx
+        });
+
+      console.log("New Ath generated: "+datx);
+
         console.log("ATH added");
 
 
-      });
 
-    }
+     }
+   });
+
     console.log("Condtitions meet preparing sms");
     console.log("Time stamp: "+d.toString());
     //Add log to DB
