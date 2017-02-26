@@ -89,11 +89,11 @@ cron.schedule('*/10 * * * * *', function (){
   curr = datx;
   //Print 2 console
     //Get all time high
-  var athValue=""
+
     Ath.findOne({code:1}, function(err, value){
-      athValue=value.value;
+
       console.log("ATH: " + value.value+ " Date: " +value.time);
-    });
+
   console.log("Time stamp: "+d.toString());
   console.log("Fluc status: "+bool);
   console.log("Bitcoin AVG price: $" + avg);
@@ -108,35 +108,54 @@ cron.schedule('*/10 * * * * *', function (){
   console.log("Fluc status: " + bool);
 
 
-
+//Declare test
   var test ="";
+  //Test ATH
+
+  if(datx>value.value&&bool){
+    athOld=Math.floor(value.value);
+    athNew=Math.floor(datx);
+    test="ATH "+athOld+ " BROKE by "+ athNew;
+    //Add all time high
+    var newAth = Ath({
+      time: d.toString(),
+      value: datx,
+      code: 1
+    });
+
+
+    Ath.findById("58b34c51c83844ac8f7db8dc",function(err,todo){
+      //Handle error
+      if(err) throw err;
+      //Update each attribute
+      else{
+        todo.value= datx;
+        todo.time= d.toString();
+        todo.code= 1;
+        //Save updated document
+        todo.save(function(err,todo){
+          if(err) throw err;
+          console.log("New ATH updated in Mongodb , new value: "+ todo.value);
+        });
+      }
+    });
+
+    console.log("New Ath generated: "+datx);
+
+      console.log(test);
+
+
+
+   }
 
 
   if(bool&&datx>0){
 
 
     //ATH test
-    Ath.findOne({code:1}, function(err, value){
-    if(datx>value.value){
-      athOld=Math.floor(value.value);
-      athNew=Math.floor(datx);
-      test="ATH "+athOld+ " BROKE by "+ athNew;
-      //Add all time high
-
-
-      Ath.update({code:1},{
-        time: d.toString(),
-        value: datx
-        });
-
-      console.log("New Ath generated: "+datx);
-
-        console.log("ATH added");
 
 
 
-     }
-   });
 
     console.log("Condtitions meet preparing sms");
     console.log("Time stamp: "+d.toString());
@@ -207,6 +226,7 @@ cron.schedule('*/10 * * * * *', function (){
     console.log("");
 
   }
+  });
 
 
 })
